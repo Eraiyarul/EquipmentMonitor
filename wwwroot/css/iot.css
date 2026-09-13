@@ -716,9 +716,9 @@ a:hover { color: #60a5fa; }
 }
 .alert-row:hover { background: var(--bg-elevated); }
 .alert-row:last-child { border-bottom: none; }
-.alert-row.severity-active { border-left: 2px solid var(--red); }
-.alert-row.severity-ack    { border-left: 2px solid var(--yellow); }
-.alert-row.severity-resolved { border-left: 2px solid var(--green); }
+.alert-row.severity-active   { box-shadow: inset 3px 0 0 var(--red); }
+.alert-row.severity-ack      { box-shadow: inset 3px 0 0 var(--yellow); }
+.alert-row.severity-resolved { box-shadow: inset 3px 0 0 var(--green); }
 
 /* ══════════════════════════════════════════════════════════
    TOAST NOTIFICATIONS

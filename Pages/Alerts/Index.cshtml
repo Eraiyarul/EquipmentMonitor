@@ -40,7 +40,6 @@
     <table class="iot-table">
         <thead>
             <tr>
-                <th style="width:10px"></th>
                 <th>Station</th>
                 <th>Alert Message</th>
                 <th>Status</th>
@@ -52,7 +51,7 @@
             @if (!Model.ActiveAlerts.Any())
             {
                 <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         <i class="bi bi-shield-check" style="color:var(--green);font-size:16px"></i>
                         All clear — no open alerts
                     </td>
@@ -67,7 +66,6 @@
                     _ => ("badge-ack", "severity-ack")
                 };
                 <tr class="alert-row @rowClass" id="alert-row-@a.Id">
-                    <td></td>
                     <td>
                         <a asp-page="/Equipment/Details" asp-route-id="@a.EquipmentId"
                            style="color:var(--text-primary);font-weight:600">
@@ -111,7 +109,6 @@
     <table class="iot-table">
         <thead>
             <tr>
-                <th style="width:10px"></th>
                 <th>Station</th>
                 <th>Alert Message</th>
                 <th>Resolved (UTC)</th>
@@ -120,12 +117,11 @@
         <tbody>
             @if (!Model.ResolvedAlerts.Any())
             {
-                <tr><td colspan="4" class="empty-state">No resolved alerts yet</td></tr>
+                <tr><td colspan="3" class="empty-state">No resolved alerts yet</td></tr>
             }
             @foreach (var a in Model.ResolvedAlerts)
             {
                 <tr class="alert-row severity-resolved">
-                    <td></td>
                     <td style="font-weight:600;color:var(--text-secondary)">@a.Equipment.Name</td>
                     <td style="font-size:12.5px;color:var(--text-muted)">@a.Message</td>
                     <td class="mono td-muted" style="font-size:12px">@a.ResolvedAt?.ToString("dd MMM HH:mm")</td>
@@ -151,7 +147,6 @@ connection.on('NewAlert', a => {
     tr.className = 'alert-row severity-active';
     tr.id = `alert-row-${a.id}`;
     tr.innerHTML = `
-        <td></td>
         <td><a href="/Equipment/Details/${a.equipmentId}" style="color:var(--text-primary);font-weight:600">${a.equipmentName}</a></td>
         <td style="font-size:12.5px;color:var(--text-secondary)">${a.message}</td>
         <td><span class="badge-active">Active</span></td>
