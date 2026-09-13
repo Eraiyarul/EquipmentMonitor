@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] — IoT Monitor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/iot.css" asp-append-version="true" />
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon"><i class="bi bi-activity text-white"></i></div>
+        <span>IoT Monitor</span>
+    </div>
+
+    <div class="sidebar-section">Navigation</div>
+
+    <a class="nav-link-item @(ViewData["Page"]?.ToString() == "dashboard" ? "active" : "")" asp-page="/Index">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link-item @(ViewData["Page"]?.ToString() == "alerts" ? "active" : "")" asp-page="/Alerts/Index" id="nav-alerts">
+        <i class="bi bi-bell-fill"></i> Alerts
+        <span class="nav-badge d-none" id="sidebar-alert-badge">0</span>
+    </a>
+
+    <div class="sidebar-section" style="margin-top:8px">Equipment</div>
+    <a class="nav-link-item @(ViewData["Page"]?.ToString() == "create" ? "active" : "")" asp-page="/Equipment/Create">
+        <i class="bi bi-plus-square"></i> Add Station
+    </a>
+
+    <div class="sidebar-footer">
+        <!-- User info -->
+        <div style="padding:10px 16px;border-top:1px solid var(--border);margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                @User.FindFirst("FullName")?.Value
+            </div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">
+                <span style="background:rgba(59,130,246,.18);color:var(--blue);padding:1px 6px;border-radius:4px;font-weight:700;font-size:9.5px;letter-spacing:.5px">
+                    @User.FindFirst("TenantCode")?.Value
+                </span>
+                &nbsp;
+                <span style="font-size:10px">@User.FindFirst("UserRole")?.Value</span>
+            </div>
+        </div>
+
+        <div class="conn-status" style="padding:0 16px">
+            <span class="led led-gray" id="conn-led"></span>
+            <span id="conn-text" style="font-size:12px;color:var(--text-muted)">Connecting…</span>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;padding-left:16px">
+            SignalR Live Feed
+        </div>
+
+        <form method="post" asp-page="/Account/Logout" style="padding:10px 12px 0">
+            <button type="submit" style="width:100%;padding:7px 12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:border-color var(--transition);"
+                    onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+                    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+                <i class="bi bi-box-arrow-left"></i> Sign Out
+            </button>
+        </form>
+    </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────────── -->
+<div class="main-wrap">
+    <header class="topbar">
+        <div>
+            <div class="topbar-title">@(ViewData["Title"] ?? "Dashboard")</div>
+            <div class="topbar-sub">Equipment Monitoring &amp; Management System</div>
+        </div>
+        <div class="topbar-right">
+            <span class="topbar-time mono" id="live-clock"></span>
+            <span style="width:1px;height:24px;background:var(--border);display:inline-block"></span>
+            <span style="font-size:12px;color:var(--text-muted)">
+                <i class="bi bi-building" style="margin-right:4px"></i>@User.FindFirst("TenantName")?.Value
+            </span>
+            <span style="width:1px;height:24px;background:var(--border);display:inline-block"></span>
+            <span style="font-size:12px;color:var(--text-muted)">
+                <i class="bi bi-server" style="margin-right:4px"></i>PostgreSQL
+            </span>
+        </div>
+    </header>
+
+    <div class="page-content">
+        @RenderBody()
+    </div>
+</div>
+
+<!-- ── Toast Container ──────────────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── Scripts ──────────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    // ── Live Clock ────────────────────────────────────────────────
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').textContent =
+            now.toUTCString().replace(' GMT', ' UTC').slice(5, 26);
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ── SignalR ───────────────────────────────────────────────────
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl('/hubs/equipment')
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .build();
+
+    const connLed  = document.getElementById('conn-led');
+    const connText = document.getElementById('conn-text');
+
+    function setConnected(state) {
+        connLed.className  = state ? 'led led-green' : 'led led-red';
+        connText.textContent = state ? 'Live — Connected' : 'Disconnected';
+        connText.style.color = state ? 'var(--green)' : 'var(--red)';
+    }
+
+    connection.onreconnecting(() => setConnected(false));
+    connection.onreconnected(()  => setConnected(true));
+    connection.onclose(()        => setConnected(false));
+
+    (async function startSignalR() {
+        try {
+            await connection.start();
+            setConnected(true);
+        } catch { setTimeout(startSignalR, 4000); }
+    })();
+
+    // ── Toast helper ──────────────────────────────────────────────
+    let _alertSidebarCount = 0;
+
+    function showToast(title, msg, type = 'alert') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `iot-toast ${type === 'warn' ? 'warn' : ''}`;
+        t.innerHTML = `
+            <div class="toast-icon"><i class="bi bi-${type === 'warn' ? 'exclamation-triangle' : 'exclamation-octagon'}-fill"></i></div>
+            <div>
+                <div class="toast-title">${title}</div>
+                <div class="toast-msg">${msg}</div>
+            </div>
+            <button class="toast-close" onclick="this.closest('.iot-toast').remove()">&times;</button>`;
+        c.prepend(t);
+        setTimeout(() => t.remove(), 7000);
+
+        // Bump sidebar badge
+        _alertSidebarCount++;
+        const badge = document.getElementById('sidebar-alert-badge');
+        if (badge) { badge.textContent = _alertSidebarCount; badge.classList.remove('d-none'); }
+    }
+
+    // Global handler — pages override with their own connection.on('NewReading')
+    connection.on('NewAlert', a => {
+        showToast(a.equipmentName, a.message, 'alert');
+    });
+</script>
+
+<style>
+    /* Bootstrap d-none helper since we removed Bootstrap */
+    .d-none { display: none !important; }
+    .text-white { color: #fff; }
+</style>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

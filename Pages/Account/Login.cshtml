@@ -1,0 +1,154 @@
+@page
+@model LoginModel
+@{ Layout = "_LoginLayout"; ViewData["Title"] = "Sign In"; }
+
+<div class="login-shell">
+
+    <!-- Brand -->
+    <div class="login-brand">
+        <div class="login-logo"><i class="bi bi-activity"></i></div>
+        <div class="login-brand-title">IoT Monitor</div>
+        <div class="login-brand-sub">Equipment Monitoring &amp; Management System</div>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+        <div class="login-card-title">
+            <i class="bi bi-shield-lock-fill" style="color:var(--blue)"></i>
+            Authenticate
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="login-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label-iot" asp-for="Input.Username">Username</label>
+                <div class="input-wrap">
+                    <i class="bi bi-person input-icon"></i>
+                    <input id="Username" asp-for="Input.Username"
+                           class="form-control-iot"
+                           placeholder="Enter username"
+                           autocomplete="username" />
+                </div>
+                <span asp-validation-for="Input.Username" class="field-error"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label-iot" asp-for="Input.Password">Password</label>
+                <div class="input-wrap">
+                    <i class="bi bi-lock input-icon"></i>
+                    <input id="Password" asp-for="Input.Password"
+                           class="form-control-iot"
+                           type="password"
+                           placeholder="Enter password"
+                           autocomplete="current-password" />
+                </div>
+                <span asp-validation-for="Input.Password" class="field-error"></span>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="bi bi-box-arrow-in-right"></i>
+                AUTHENTICATE
+            </button>
+        </form>
+
+        <!-- Demo Accounts -->
+        <div class="demo-accounts">
+            <div class="demo-label">Demo Accounts — click to fill</div>
+
+            <div class="demo-row" data-user="admin" data-pass="Admin@123">
+                <div>
+                    <div class="demo-tenant">Acme Industries</div>
+                    <div class="demo-cred">admin / Admin@123</div>
+                </div>
+                <span class="demo-tag admin">ADMIN</span>
+            </div>
+
+            <div class="demo-row" data-user="operator" data-pass="Operator@123">
+                <div>
+                    <div class="demo-tenant">Acme Industries</div>
+                    <div class="demo-cred">operator / Operator@123</div>
+                </div>
+                <span class="demo-tag op">OPERATOR</span>
+            </div>
+
+            <div class="demo-row" data-user="techop" data-pass="Techop@123">
+                <div>
+                    <div class="demo-tenant">TechCorp Solutions</div>
+                    <div class="demo-cred">techop / Techop@123</div>
+                </div>
+                <span class="demo-tag op">OPERATOR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer">
+        <div class="sys-indicator">
+            <span class="led led-green" style="width:7px;height:7px"></span>
+            System Online
+        </div>
+        <span style="color:var(--border)">|</span>
+        <span>PostgreSQL Connected</span>
+        <span style="color:var(--border)">|</span>
+        <span>v1.0.0</span>
+    </div>
+</div>
+
+<style>
+    .mb-3 { margin-bottom: 16px; }
+
+    .form-label-iot {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .8px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 7px;
+    }
+
+    .input-wrap {
+        position: relative;
+    }
+    .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 14px;
+        pointer-events: none;
+    }
+    .form-control-iot {
+        width: 100%;
+        padding: 10px 12px 10px 36px;
+        background: var(--bg-base);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: inherit;
+        transition: border-color var(--transition), box-shadow var(--transition);
+        box-sizing: border-box;
+    }
+    .form-control-iot:focus {
+        outline: none;
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .form-control-iot::placeholder { color: var(--text-muted); }
+
+    .field-error {
+        font-size: 11.5px;
+        color: var(--red);
+        display: block;
+        margin-top: 4px;
+    }
+</style>

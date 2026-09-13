@@ -1,0 +1,43 @@
+@page "{id:int}"
+@model EquipmentMonitor.Pages.Equipment.EditModel
+@{
+    ViewData["Title"] = $"Edit — {Model.Equipment.Name}";
+    ViewData["Page"]  = "detail";
+}
+
+<div class="form-card">
+    <div class="form-title">
+        <i class="bi bi-pencil-square" style="color:var(--yellow)"></i>
+        Edit Station — @Model.Equipment.Name
+    </div>
+    <form method="post">
+        <input type="hidden" asp-for="Equipment.Id" />
+        <div class="form-group">
+            <label class="form-label">Station Name</label>
+            <input asp-for="Equipment.Name" class="form-control" required />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Equipment Type</label>
+            <input asp-for="Equipment.Type" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Location</label>
+            <input asp-for="Equipment.Location" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Operational Status</label>
+            <select asp-for="Equipment.Status" class="form-select"
+                    asp-items="Html.GetEnumSelectList<EquipmentMonitor.Models.EquipmentStatus>()"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Installation Date</label>
+            <input asp-for="Equipment.InstalledDate" type="date" class="form-control" />
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn-iot btn-iot-primary">
+                <i class="bi bi-save"></i> Save Changes
+            </button>
+            <a asp-page="/Equipment/Details" asp-route-id="@Model.Equipment.Id" class="btn-iot btn-iot-ghost">Cancel</a>
+        </div>
+    </form>
+</div>

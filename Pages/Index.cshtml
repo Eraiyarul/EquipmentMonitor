@@ -1,0 +1,254 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Page"]  = "dashboard";
+}
+
+<!-- ── KPI Row ────────────────────────────────────────────────────── -->
+<div class="kpi-grid">
+    <div class="kpi-card blue">
+        <i class="bi bi-cpu kpi-icon"></i>
+        <div class="kpi-label">Total Stations</div>
+        <div class="kpi-value">@Model.Equipments.Count</div>
+        <div class="kpi-sub">@Model.Equipments.Count(e => e.Status == EquipmentMonitor.Models.EquipmentStatus.Active) Active &nbsp;·&nbsp; @Model.Equipments.Count(e => e.Status == EquipmentMonitor.Models.EquipmentStatus.Idle) Idle</div>
+    </div>
+    <div class="kpi-card green">
+        <i class="bi bi-lightning-charge kpi-icon"></i>
+        <div class="kpi-label">Online Now</div>
+        <div class="kpi-value">@Model.Equipments.Count(e => e.Status == EquipmentMonitor.Models.EquipmentStatus.Active)</div>
+        <div class="kpi-sub">Actively reporting</div>
+    </div>
+    <div class="kpi-card red">
+        <i class="bi bi-bell-fill kpi-icon"></i>
+        <div class="kpi-label">Active Alerts</div>
+        <div class="kpi-value" id="stat-alerts">@Model.ActiveAlertCount</div>
+        <div class="kpi-sub">Require attention</div>
+    </div>
+    <div class="kpi-card yellow">
+        <i class="bi bi-graph-up kpi-icon"></i>
+        <div class="kpi-label">Readings Today</div>
+        <div class="kpi-value" id="stat-readings">@Model.TotalReadingsToday</div>
+        <div class="kpi-sub">UTC @DateTime.UtcNow.ToString("dd MMM")</div>
+    </div>
+</div>
+
+<!-- ── Station Cards ─────────────────────────────────────────────── -->
+<div class="section-header">
+    <div class="section-title"><i class="bi bi-broadcast"></i> Sensor Stations</div>
+    <a asp-page="/Equipment/Create" class="btn-iot btn-iot-ghost" style="font-size:12px;padding:5px 12px">
+        <i class="bi bi-plus"></i> Add Station
+    </a>
+</div>
+
+<div class="stations-grid" id="stations-grid">
+    @foreach (var eq in Model.Equipments)
+    {
+        var (ledClass, pillClass, pillIcon) = eq.Status switch
+        {
+            EquipmentMonitor.Models.EquipmentStatus.Active           => ("led-green",  "active",      "bi-check-circle-fill"),
+            EquipmentMonitor.Models.EquipmentStatus.Idle             => ("led-blue",   "idle",        "bi-pause-circle-fill"),
+            EquipmentMonitor.Models.EquipmentStatus.Faulty           => ("led-red",    "faulty",      "bi-x-circle-fill"),
+            EquipmentMonitor.Models.EquipmentStatus.UnderMaintenance => ("led-yellow", "maintenance", "bi-tools"),
+            _ => ("led-gray", "idle", "bi-question")
+        };
+
+        var temp     = eq.LatestReadings.FirstOrDefault(r => r.MetricType == "Temperature");
+        var humidity = eq.LatestReadings.FirstOrDefault(r => r.MetricType == "Humidity");
+        var pressure = eq.LatestReadings.FirstOrDefault(r => r.MetricType == "Pressure");
+
+        <div class="station-card @(eq.ActiveAlerts > 0 ? "alert-active" : "")" id="card-@eq.Id">
+            <div class="station-header">
+                <div>
+                    <div class="station-name">
+                        <span class="led @ledClass"></span>
+                        @eq.Name
+                    </div>
+                    <div class="station-meta">
+                        <i class="bi bi-geo-alt"></i>@eq.Location &nbsp;·&nbsp;
+                        <i class="bi bi-tag"></i>@eq.Type
+                    </div>
+                </div>
+                <span class="status-pill @pillClass">
+                    <i class="bi @pillIcon"></i> @eq.Status
+                </span>
+            </div>
+
+            <!-- Metric cells -->
+            <div class="station-metrics">
+                <div class="metric-cell" id="m-temp-@eq.Id">
+                    <span class="metric-icon-sm" style="color:#f59e0b">🌡</span>
+                    <div class="metric-val @(temp == null ? "" : "")">
+                        @(temp != null ? $"{temp.Value}" : "—")
+                    </div>
+                    <div class="metric-type">Temp @(temp != null ? temp.Unit : "°C")</div>
+                </div>
+                <div class="metric-cell" id="m-hum-@eq.Id">
+                    <span class="metric-icon-sm" style="color:#06b6d4">💧</span>
+                    <div class="metric-val">
+                        @(humidity != null ? $"{humidity.Value}" : "—")
+                    </div>
+                    <div class="metric-type">Humidity @(humidity != null ? humidity.Unit : "%")</div>
+                </div>
+                <div class="metric-cell" id="m-pres-@eq.Id">
+                    <span class="metric-icon-sm" style="color:#8b5cf6">📊</span>
+                    <div class="metric-val">
+                        @(pressure != null ? $"{pressure.Value}" : "—")
+                    </div>
+                    <div class="metric-type">Pressure @(pressure != null ? pressure.Unit : "hPa")</div>
+                </div>
+            </div>
+
+            <div class="station-footer">
+                @if (eq.ActiveAlerts > 0)
+                {
+                    <span class="alert-chip">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span id="alert-count-@eq.Id">@eq.ActiveAlerts</span> alert@(eq.ActiveAlerts != 1 ? "s" : "")
+                    </span>
+                }
+                else
+                {
+                    <span class="no-alert-chip" id="alert-chip-@eq.Id">
+                        <i class="bi bi-shield-check" style="color:var(--green);margin-right:4px"></i>No alerts
+                    </span>
+                }
+                <a asp-page="/Equipment/Details" asp-route-id="@eq.Id" class="btn-detail">
+                    Details <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ── Bottom: Chart + Live Feed ─────────────────────────────────── -->
+<div class="two-col">
+    <!-- Live chart -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="led led-green"></span>
+                Real-Time Readings
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)">All stations · last 30 points</span>
+        </div>
+        <div class="chart-wrap" style="height:230px">
+            <canvas id="liveChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Live feed -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="led led-green"></span>
+                Event Log
+            </div>
+        </div>
+        <div id="live-feed" style="max-height:230px;overflow-y:auto">
+            <div class="feed-placeholder">
+                <span class="led led-yellow"></span> Waiting for readings…
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// Chart.js — dark styled real-time line chart
+Chart.defaults.color = '#475569';
+Chart.defaults.borderColor = '#1e3050';
+
+const ctx = document.getElementById('liveChart').getContext('2d');
+const chartData = {
+    labels: [],
+    datasets: [
+        { label: 'Temperature (°C)', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.08)', tension: .4, pointRadius: 2 },
+        { label: 'Humidity (%)',      data: [], borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,.08)',  tension: .4, pointRadius: 2 },
+        { label: 'Pressure (hPa)',    data: [], borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,.08)', tension: .4, pointRadius: 2, hidden: true }
+    ]
+};
+const liveChart = new Chart(ctx, {
+    type: 'line',
+    data: chartData,
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 }, padding: 12, boxWidth: 12, color: '#7b92b8' } }
+        },
+        scales: {
+            x: { ticks: { maxTicksLimit: 8, font: { size: 10 }, color: '#445a7a' }, grid: { color: '#1e3050' } },
+            y: { ticks: { font: { size: 10 }, color: '#445a7a' }, grid: { color: '#1e3050' } }
+        }
+    }
+});
+
+// Metric cell map: equipId -> { metricType -> cellId }
+const metricCellMap = {
+    'Temperature': (id) => document.querySelector(`#m-temp-${id} .metric-val`),
+    'Humidity':    (id) => document.querySelector(`#m-hum-${id} .metric-val`),
+    'Pressure':    (id) => document.querySelector(`#m-pres-${id} .metric-val`)
+};
+
+let readingCount = @Model.TotalReadingsToday;
+let alertCount   = @Model.ActiveAlertCount;
+const MAX_CHART  = 30;
+
+connection.on('NewReading', r => {
+    readingCount++;
+    document.getElementById('stat-readings').textContent = readingCount;
+
+    // Update metric cell on station card
+    const getCell = metricCellMap[r.metricType];
+    if (getCell) {
+        const el = getCell(r.equipmentId);
+        if (el) {
+            el.textContent = `${r.value}`;
+            el.className   = 'metric-val'; // reset alert styling
+        }
+    }
+
+    // Chart update
+    const label = r.timestamp;
+    if (r.metricType === 'Temperature') { chartData.datasets[0].data.push(r.value); chartData.labels.push(label); }
+    if (r.metricType === 'Humidity')    { chartData.datasets[1].data.push(r.value); }
+    if (r.metricType === 'Pressure')    { chartData.datasets[2].data.push(r.value); }
+
+    // Trim to MAX_CHART
+    if (chartData.labels.length > MAX_CHART) {
+        chartData.labels.shift();
+        chartData.datasets.forEach(d => { if (d.data.length > MAX_CHART) d.data.shift(); });
+    }
+    liveChart.update('none');
+
+    // Live feed
+    const feed = document.getElementById('live-feed');
+    const ph   = feed.querySelector('.feed-placeholder');
+    if (ph) ph.remove();
+
+    const row = document.createElement('div');
+    row.className = 'feed-row new';
+    row.innerHTML = `
+        <span class="feed-station">${r.equipmentName}</span>
+        <span class="feed-metric">${r.metricType}</span>
+        <span class="feed-value normal">${r.value}</span>
+        <span class="feed-unit">${r.unit}</span>
+        <span class="feed-time">${r.timestamp}</span>`;
+    feed.insertBefore(row, feed.firstChild);
+    while (feed.children.length > 25) feed.removeChild(feed.lastChild);
+});
+
+connection.on('NewAlert', a => {
+    alertCount++;
+    document.getElementById('stat-alerts').textContent = alertCount;
+
+    // Highlight station card
+    const card = document.getElementById(`card-${a.equipmentId}`);
+    if (card) card.classList.add('alert-active');
+
+    // Update feed row for this metric to red
+    const getCell = metricCellMap[a.metricType];  // may be undefined if no metricType on alert
+});
+</script>
+}

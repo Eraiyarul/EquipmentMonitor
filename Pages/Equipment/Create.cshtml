@@ -1,0 +1,42 @@
+@page
+@model EquipmentMonitor.Pages.Equipment.CreateModel
+@{
+    ViewData["Title"] = "Add Station";
+    ViewData["Page"]  = "create";
+}
+
+<div class="form-card">
+    <div class="form-title">
+        <i class="bi bi-plus-square" style="color:var(--blue)"></i>
+        Register New Sensor Station
+    </div>
+    <form method="post">
+        <div class="form-group">
+            <label class="form-label">Station Name</label>
+            <input asp-for="Equipment.Name" class="form-control" placeholder="e.g. Station Delta" required />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Equipment Type</label>
+            <input asp-for="Equipment.Type" class="form-control" placeholder="e.g. Weather Sensor" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Location</label>
+            <input asp-for="Equipment.Location" class="form-control" placeholder="e.g. East Wing — Floor 3" />
+        </div>
+        <div class="form-group">
+            <label class="form-label">Operational Status</label>
+            <select asp-for="Equipment.Status" class="form-select"
+                    asp-items="Html.GetEnumSelectList<EquipmentMonitor.Models.EquipmentStatus>()"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Installation Date</label>
+            <input asp-for="Equipment.InstalledDate" type="date" class="form-control" />
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn-iot btn-iot-primary">
+                <i class="bi bi-save"></i> Register Station
+            </button>
+            <a asp-page="/Index" class="btn-iot btn-iot-ghost">Cancel</a>
+        </div>
+    </form>
+</div>

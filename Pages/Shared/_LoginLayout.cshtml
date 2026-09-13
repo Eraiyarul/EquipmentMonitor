@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] — IoT Monitor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/iot.css" asp-append-version="true" />
+    <style>
+        /* ── Full-screen login shell ─────────────────────────── */
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-base);
+            background-image:
+                linear-gradient(rgba(59,130,246,.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59,130,246,.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 60% at 50% 40%,
+                rgba(59,130,246,.07) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* ── Login card ──────────────────────────────────────── */
+        .login-shell {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .login-brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo {
+            width: 52px; height: 52px;
+            background: var(--blue);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #fff;
+            box-shadow: 0 0 24px var(--blue-glow);
+            margin-bottom: 14px;
+        }
+        .login-brand-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: .5px;
+        }
+        .login-brand-sub {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: .3px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 32px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.5);
+        }
+        .login-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .login-card-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .login-error {
+            background: var(--red-glow);
+            border: 1px solid rgba(239,68,68,.3);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12.5px;
+            color: var(--red);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            cursor: pointer;
+            transition: background var(--transition), box-shadow var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-login:hover {
+            background: #2563eb;
+            box-shadow: 0 0 16px var(--blue-glow);
+        }
+        .btn-login:active { transform: scale(.98); }
+
+        .demo-accounts {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+        .demo-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .demo-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: border-color var(--transition);
+        }
+        .demo-row:hover { border-color: var(--blue); }
+        .demo-row:last-child { margin-bottom: 0; }
+        .demo-tenant {
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+        .demo-cred {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        .demo-tag {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+        .demo-tag.admin { background: rgba(59,130,246,.2); color: var(--blue); }
+        .demo-tag.op    { background: rgba(34,197,94,.15); color: var(--green); }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .sys-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+@RenderBody()
+
+<script>
+// Click demo row → fill credentials
+document.querySelectorAll('.demo-row[data-user]').forEach(row => {
+    row.addEventListener('click', () => {
+        document.getElementById('Username').value = row.dataset.user;
+        document.getElementById('Password').value = row.dataset.pass;
+    });
+});
+</script>
+</body>
+</html>

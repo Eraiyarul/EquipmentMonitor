@@ -1,0 +1,174 @@
+@page
+@model EquipmentMonitor.Pages.Alerts.IndexModel
+@{
+    ViewData["Title"] = "Alert Management";
+    ViewData["Page"]  = "alerts";
+}
+
+<!-- ── Summary KPIs ──────────────────────────────────────────────── -->
+<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+    <div class="kpi-card red">
+        <i class="bi bi-exclamation-octagon-fill kpi-icon"></i>
+        <div class="kpi-label">Active Alerts</div>
+        <div class="kpi-value" id="kpi-active">@Model.ActiveAlerts.Count(a => a.Status == EquipmentMonitor.Models.AlertStatus.Active)</div>
+        <div class="kpi-sub">Require immediate action</div>
+    </div>
+    <div class="kpi-card yellow">
+        <i class="bi bi-clock-fill kpi-icon"></i>
+        <div class="kpi-label">Acknowledged</div>
+        <div class="kpi-value">@Model.ActiveAlerts.Count(a => a.Status == EquipmentMonitor.Models.AlertStatus.Acknowledged)</div>
+        <div class="kpi-sub">Being investigated</div>
+    </div>
+    <div class="kpi-card green">
+        <i class="bi bi-check-circle-fill kpi-icon"></i>
+        <div class="kpi-label">Resolved (last 20)</div>
+        <div class="kpi-value">@Model.ResolvedAlerts.Count</div>
+        <div class="kpi-sub">Closed alerts</div>
+    </div>
+</div>
+
+<!-- ── Active & Acknowledged ─────────────────────────────────────── -->
+<div class="section-header">
+    <div class="section-title"><i class="bi bi-bell-fill" style="color:var(--red)"></i> Open Alerts</div>
+</div>
+
+<div class="panel" style="margin-bottom:24px">
+    <div class="panel-header">
+        <div class="panel-title">Active &amp; Acknowledged</div>
+        <span style="font-size:11px;color:var(--text-muted)">Live — updates via SignalR</span>
+    </div>
+    <table class="iot-table">
+        <thead>
+            <tr>
+                <th style="width:10px"></th>
+                <th>Station</th>
+                <th>Alert Message</th>
+                <th>Status</th>
+                <th>Created (UTC)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="active-alerts-body">
+            @if (!Model.ActiveAlerts.Any())
+            {
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="bi bi-shield-check" style="color:var(--green);font-size:16px"></i>
+                        All clear — no open alerts
+                    </td>
+                </tr>
+            }
+            @foreach (var a in Model.ActiveAlerts)
+            {
+                var (badgeClass, rowClass) = a.Status switch
+                {
+                    EquipmentMonitor.Models.AlertStatus.Active       => ("badge-active", "severity-active"),
+                    EquipmentMonitor.Models.AlertStatus.Acknowledged => ("badge-ack",    "severity-ack"),
+                    _ => ("badge-ack", "severity-ack")
+                };
+                <tr class="alert-row @rowClass" id="alert-row-@a.Id">
+                    <td></td>
+                    <td>
+                        <a asp-page="/Equipment/Details" asp-route-id="@a.EquipmentId"
+                           style="color:var(--text-primary);font-weight:600">
+                            @a.Equipment.Name
+                        </a>
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-secondary)">@a.Message</td>
+                    <td><span class="@badgeClass">@a.Status</span></td>
+                    <td class="mono td-muted" style="font-size:12px">@a.CreatedAt.ToString("dd MMM HH:mm")</td>
+                    <td>
+                        <div style="display:flex;gap:6px">
+                            @if (a.Status == EquipmentMonitor.Models.AlertStatus.Active)
+                            {
+                                <form method="post" asp-page-handler="Acknowledge">
+                                    <input type="hidden" name="id" value="@a.Id" />
+                                    <button class="btn-iot btn-iot-warn btn-iot-sm" type="submit">
+                                        <i class="bi bi-check"></i> Ack
+                                    </button>
+                                </form>
+                            }
+                            <form method="post" asp-page-handler="Resolve">
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <button class="btn-iot btn-iot-success btn-iot-sm" type="submit">
+                                    <i class="bi bi-check-all"></i> Resolve
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Resolved ───────────────────────────────────────────────────── -->
+<div class="section-header">
+    <div class="section-title"><i class="bi bi-check-circle" style="color:var(--green)"></i> Recently Resolved</div>
+</div>
+
+<div class="panel">
+    <table class="iot-table">
+        <thead>
+            <tr>
+                <th style="width:10px"></th>
+                <th>Station</th>
+                <th>Alert Message</th>
+                <th>Resolved (UTC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.ResolvedAlerts.Any())
+            {
+                <tr><td colspan="4" class="empty-state">No resolved alerts yet</td></tr>
+            }
+            @foreach (var a in Model.ResolvedAlerts)
+            {
+                <tr class="alert-row severity-resolved">
+                    <td></td>
+                    <td style="font-weight:600;color:var(--text-secondary)">@a.Equipment.Name</td>
+                    <td style="font-size:12.5px;color:var(--text-muted)">@a.Message</td>
+                    <td class="mono td-muted" style="font-size:12px">@a.ResolvedAt?.ToString("dd MMM HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+let activeCount = @Model.ActiveAlerts.Count(a => a.Status == EquipmentMonitor.Models.AlertStatus.Active);
+
+connection.on('NewAlert', a => {
+    activeCount++;
+    document.getElementById('kpi-active').textContent = activeCount;
+
+    const tbody = document.getElementById('active-alerts-body');
+    const ph    = tbody.querySelector('td[colspan]');
+    if (ph) ph.closest('tr').remove();
+
+    const tr = document.createElement('tr');
+    tr.className = 'alert-row severity-active';
+    tr.id = `alert-row-${a.id}`;
+    tr.innerHTML = `
+        <td></td>
+        <td><a href="/Equipment/Details/${a.equipmentId}" style="color:var(--text-primary);font-weight:600">${a.equipmentName}</a></td>
+        <td style="font-size:12.5px;color:var(--text-secondary)">${a.message}</td>
+        <td><span class="badge-active">Active</span></td>
+        <td class="mono td-muted" style="font-size:12px">${a.createdAt}</td>
+        <td>
+            <div style="display:flex;gap:6px">
+                <form method="post" action="/Alerts?handler=Acknowledge">
+                    <input type="hidden" name="id" value="${a.id}" />
+                    <button class="btn-iot btn-iot-warn btn-iot-sm" type="submit"><i class="bi bi-check"></i> Ack</button>
+                </form>
+                <form method="post" action="/Alerts?handler=Resolve">
+                    <input type="hidden" name="id" value="${a.id}" />
+                    <button class="btn-iot btn-iot-success btn-iot-sm" type="submit"><i class="bi bi-check-all"></i> Resolve</button>
+                </form>
+            </div>
+        </td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+});
+</script>
+}
