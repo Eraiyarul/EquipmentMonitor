@@ -37,7 +37,14 @@
         <div class="panel-title">Active &amp; Acknowledged</div>
         <span style="font-size:11px;color:var(--text-muted)">Live — updates via SignalR</span>
     </div>
-    <table class="iot-table">
+    <table class="iot-table" style="table-layout:fixed;width:100%">
+        <colgroup>
+            <col style="width:16%" />
+            <col style="width:44%" />
+            <col style="width:11%" />
+            <col style="width:14%" />
+            <col style="width:15%" />
+        </colgroup>
         <thead>
             <tr>
                 <th>Station</th>
@@ -66,16 +73,16 @@
                     _ => ("badge-ack", "severity-ack")
                 };
                 <tr class="alert-row @rowClass" id="alert-row-@a.Id">
-                    <td>
+                    <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                         <a asp-page="/Equipment/Details" asp-route-id="@a.EquipmentId"
                            style="color:var(--text-primary);font-weight:600">
                             @a.Equipment.Name
                         </a>
                     </td>
-                    <td style="font-size:12.5px;color:var(--text-secondary)">@a.Message</td>
+                    <td style="font-size:12.5px;color:var(--text-secondary);word-break:break-word">@a.Message</td>
                     <td><span class="@badgeClass">@a.Status</span></td>
                     <td class="mono td-muted" style="font-size:12px">@a.CreatedAt.ToString("dd MMM HH:mm")</td>
-                    <td>
+                    <td style="white-space:nowrap">
                         <div style="display:flex;gap:6px">
                             @if (a.Status == EquipmentMonitor.Models.AlertStatus.Active)
                             {
@@ -106,7 +113,12 @@
 </div>
 
 <div class="panel">
-    <table class="iot-table">
+    <table class="iot-table" style="table-layout:fixed;width:100%">
+        <colgroup>
+            <col style="width:18%" />
+            <col style="width:64%" />
+            <col style="width:18%" />
+        </colgroup>
         <thead>
             <tr>
                 <th>Station</th>
@@ -122,8 +134,8 @@
             @foreach (var a in Model.ResolvedAlerts)
             {
                 <tr class="alert-row severity-resolved">
-                    <td style="font-weight:600;color:var(--text-secondary)">@a.Equipment.Name</td>
-                    <td style="font-size:12.5px;color:var(--text-muted)">@a.Message</td>
+                    <td style="font-weight:600;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@a.Equipment.Name</td>
+                    <td style="font-size:12.5px;color:var(--text-muted);word-break:break-word">@a.Message</td>
                     <td class="mono td-muted" style="font-size:12px">@a.ResolvedAt?.ToString("dd MMM HH:mm")</td>
                 </tr>
             }
