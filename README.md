@@ -238,13 +238,13 @@ dotnet ef database update <MigrationName>
 
 **Tenants & Equipment**
 
-| Tenant | Station | Thresholds |
-|---|---|---|
-| Acme Industries | Pump Station A | Temp 60–90°C, Humidity 30–70%, Pressure 0.8–1.2 bar |
-| Acme Industries | Compressor Unit B | Temp 50–80°C, Humidity 20–65%, Pressure 1.0–2.5 bar |
-| Acme Industries | Conveyor Belt C | Temp 20–50°C, Humidity 25–75%, Pressure 0.5–1.0 bar |
-| TechCorp Solutions | Server Rack Alpha | Temp 18–28°C, Humidity 40–60%, Pressure 0.9–1.1 bar |
-| TechCorp Solutions | CNC Machine Delta | Temp 20–45°C, Humidity 30–65%, Pressure 0.6–1.8 bar |
+| Tenant | Station | Type | Location | Status | Thresholds |
+|---|---|---|---|---|---|
+| Acme Industries | Pump Station A | Hydraulic Pump | Floor 1 - North Wing | Active | Temp 60–90°C, Humidity 30–70%, Pressure 0.8–1.2 bar |
+| Acme Industries | Compressor Unit B | Air Compressor | Floor 2 - East Bay | Active | Temp 50–80°C, Humidity 20–65%, Pressure 1.0–2.5 bar |
+| Acme Industries | Conveyor Belt C | Belt Conveyor | Warehouse - Section C | Under Maintenance | Temp 20–50°C, Humidity 25–75%, Pressure 0.5–1.0 bar |
+| TechCorp Solutions | Server Rack Alpha | Rack Server | Data Centre - Rack A12 | Active | Temp 18–28°C, Humidity 40–60%, Pressure 0.9–1.1 bar |
+| TechCorp Solutions | CNC Machine Delta | CNC Milling | Production Floor - Bay 3 | Active | Temp 20–45°C, Humidity 30–65%, Pressure 0.6–1.8 bar |
 
 ---
 
@@ -424,6 +424,32 @@ The following areas are intentionally noted per the assignment guideline *("note
 
 ---
 
+## Test Results
+
+Functional tests run against the live application on 2026-09-13:
+
+| Test | Expected | Result |
+|---|---|---|
+| Login page loads | 200 | ✅ PASS |
+| Unauthenticated dashboard → redirect | 302 to `/Account/Login` | ✅ PASS |
+| Authenticated dashboard | 200 | ✅ PASS |
+| Equipment Detail page | 200 | ✅ PASS |
+| Equipment Create page | 200 | ✅ PASS |
+| Equipment Edit page | 200 | ✅ PASS |
+| Equipment Delete page | 200 | ✅ PASS |
+| Alerts page | 200 | ✅ PASS |
+| Tenant isolation — Acme user accessing TechCorp equipment | 404 | ✅ PASS |
+| Tenant isolation — Acme user accessing TechCorp delete | 404 | ✅ PASS |
+| Dashboard shows Acme stations (Pump, Compressor, Conveyor) | 3 found | ✅ PASS |
+| TechCorp data not visible in Acme session | 0 leaks | ✅ PASS |
+| TechCorp login shows Server Rack + CNC Machine | 2 found | ✅ PASS |
+| Acme data not visible in TechCorp session | 0 leaks | ✅ PASS |
+| Date-range filter inputs on Detail page | 2 inputs | ✅ PASS |
+| Filter + Reset buttons | Present | ✅ PASS |
+| Live MQTT readings ingested | 34 readings | ✅ PASS |
+
+---
+
 ## Evaluation Notes for Reviewers
 
 - **MQTT → Backend → Frontend flow**: Start the app and open the dashboard. Within 15 seconds you will see readings populate live across metric cells, the chart, and the event log — no manual refresh.
@@ -431,6 +457,18 @@ The following areas are intentionally noted per the assignment guideline *("note
 - **Tenant isolation**: Log in as `admin` (Acme — 3 stations), then as `techop` (TechCorp — 2 different stations). Data is completely isolated at DB query, SignalR broadcast, and session level.
 - **Clean architecture**: `ReadingIngestionService` and `AlertEvaluationService` are pure service classes with no UI dependency — they can be unit-tested or reused in an API controller with zero changes.
 - **EF Core migrations**: Two clean migrations with proper indexes (`EquipmentId + Timestamp`, `EquipmentId + Status`) and foreign key constraints with cascade rules.
+- **Delete equipment**: Confirmation page with tenant ownership check — accessing another tenant's equipment returns 403/404.
+- **Date-range filtering**: Station detail page accepts `From` and `To` query parameters; defaults to last 24 hours when not specified.
+
+---
+
+## Changelog
+
+| Version | Date | Changes |
+|---|---|---|
+| v1.0.0 | 2026-09-13 | Initial release — full stack IoT monitoring with MQTT + SignalR + multi-tenant Identity |
+| v1.1.0 | 2026-09-13 | Added Delete equipment endpoint, date-range filtering on readings, professional README |
+| v1.2.0 | 2026-09-13 | Updated seed data with industry-grade equipment names, types and locations; verified all 17 functional tests |
 
 ---
 

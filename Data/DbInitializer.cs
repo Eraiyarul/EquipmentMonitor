@@ -12,8 +12,8 @@ public static class DbInitializer
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
         // ── Tenants ─────────────────────────────────────────────────────
-        var acme = new Tenant { Name = "Acme Industries",     Code = "ACME", CreatedAt = DateTime.UtcNow };
-        var tech = new Tenant { Name = "TechCorp Solutions",  Code = "TECH", CreatedAt = DateTime.UtcNow };
+        var acme = new Tenant { Name = "Acme Industries",    Code = "ACME", CreatedAt = DateTime.UtcNow };
+        var tech = new Tenant { Name = "TechCorp Solutions", Code = "TECH", CreatedAt = DateTime.UtcNow };
         db.Tenants.AddRange(acme, tech);
         await db.SaveChangesAsync();
 
@@ -36,20 +36,20 @@ public static class DbInitializer
             FullName = "Tech Operator", UserRole = "Operator", TenantId = tech.Id, EmailConfirmed = true
         }, "Techop@123");
 
-        // ── Equipment & Thresholds — Acme ───────────────────────────────
+        // ── Equipment — Acme Industries ──────────────────────────────────
         var acmeStations = new[]
         {
-            new Equipment { Name="Station Alpha", Type="Weather Sensor", Location="Rooftop",  Status=EquipmentStatus.Active, InstalledDate=Utc(2024,1,10),  TenantId=acme.Id },
-            new Equipment { Name="Station Beta",  Type="Weather Sensor", Location="Basement", Status=EquipmentStatus.Active, InstalledDate=Utc(2024,3,22),  TenantId=acme.Id },
-            new Equipment { Name="Station Gamma", Type="Weather Sensor", Location="Garden",   Status=EquipmentStatus.Idle,   InstalledDate=Utc(2024,6,5),   TenantId=acme.Id },
+            new Equipment { Name="Pump Station A",   Type="Hydraulic Pump",    Location="Floor 1 - North Wing", Status=EquipmentStatus.Active,           InstalledDate=Utc(2024,1,10),  TenantId=acme.Id },
+            new Equipment { Name="Compressor Unit B", Type="Air Compressor",   Location="Floor 2 - East Bay",   Status=EquipmentStatus.Active,           InstalledDate=Utc(2024,3,22),  TenantId=acme.Id },
+            new Equipment { Name="Conveyor Belt C",  Type="Belt Conveyor",     Location="Warehouse - Section C", Status=EquipmentStatus.UnderMaintenance, InstalledDate=Utc(2024,6,5),   TenantId=acme.Id },
         };
         db.Equipments.AddRange(acmeStations);
 
-        // ── Equipment & Thresholds — TechCorp ───────────────────────────
+        // ── Equipment — TechCorp Solutions ──────────────────────────────
         var techStations = new[]
         {
-            new Equipment { Name="Sensor X1", Type="Env Monitor", Location="Server Room", Status=EquipmentStatus.Active, InstalledDate=Utc(2024,5,1),  TenantId=tech.Id },
-            new Equipment { Name="Sensor X2", Type="Env Monitor", Location="Lab Floor",   Status=EquipmentStatus.Active, InstalledDate=Utc(2024,8,15), TenantId=tech.Id },
+            new Equipment { Name="Server Rack Alpha", Type="Rack Server",  Location="Data Centre - Rack A12", Status=EquipmentStatus.Active, InstalledDate=Utc(2024,5,1),  TenantId=tech.Id },
+            new Equipment { Name="CNC Machine Delta", Type="CNC Milling",  Location="Production Floor - Bay 3", Status=EquipmentStatus.Active, InstalledDate=Utc(2024,8,15), TenantId=tech.Id },
         };
         db.Equipments.AddRange(techStations);
 
@@ -58,18 +58,30 @@ public static class DbInitializer
         // ── Thresholds ───────────────────────────────────────────────────
         var thresholds = new List<Threshold>();
 
-        foreach (var s in acmeStations)
-        {
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Temperature", MinValue=10, MaxValue=40 });
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Humidity",    MinValue=20, MaxValue=80 });
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Pressure",    MinValue=950, MaxValue=1050 });
-        }
-        foreach (var s in techStations)
-        {
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Temperature", MinValue=18, MaxValue=28 });
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Humidity",    MinValue=30, MaxValue=60 });
-            thresholds.Add(new() { EquipmentId=s.Id, MetricType="Pressure",    MinValue=980, MaxValue=1030 });
-        }
+        // Pump Station A — industrial pump ranges
+        thresholds.Add(new() { EquipmentId=acmeStations[0].Id, MetricType="Temperature", MinValue=60,  MaxValue=90  });
+        thresholds.Add(new() { EquipmentId=acmeStations[0].Id, MetricType="Humidity",    MinValue=30,  MaxValue=70  });
+        thresholds.Add(new() { EquipmentId=acmeStations[0].Id, MetricType="Pressure",    MinValue=0.8, MaxValue=1.2 });
+
+        // Compressor Unit B — higher pressure tolerances
+        thresholds.Add(new() { EquipmentId=acmeStations[1].Id, MetricType="Temperature", MinValue=50,  MaxValue=80  });
+        thresholds.Add(new() { EquipmentId=acmeStations[1].Id, MetricType="Humidity",    MinValue=20,  MaxValue=65  });
+        thresholds.Add(new() { EquipmentId=acmeStations[1].Id, MetricType="Pressure",    MinValue=1.0, MaxValue=2.5 });
+
+        // Conveyor Belt C — lower thermal range
+        thresholds.Add(new() { EquipmentId=acmeStations[2].Id, MetricType="Temperature", MinValue=20,  MaxValue=50  });
+        thresholds.Add(new() { EquipmentId=acmeStations[2].Id, MetricType="Humidity",    MinValue=25,  MaxValue=75  });
+        thresholds.Add(new() { EquipmentId=acmeStations[2].Id, MetricType="Pressure",    MinValue=0.5, MaxValue=1.0 });
+
+        // Server Rack Alpha — strict data centre ranges
+        thresholds.Add(new() { EquipmentId=techStations[0].Id, MetricType="Temperature", MinValue=18,  MaxValue=28  });
+        thresholds.Add(new() { EquipmentId=techStations[0].Id, MetricType="Humidity",    MinValue=40,  MaxValue=60  });
+        thresholds.Add(new() { EquipmentId=techStations[0].Id, MetricType="Pressure",    MinValue=0.9, MaxValue=1.1 });
+
+        // CNC Machine Delta
+        thresholds.Add(new() { EquipmentId=techStations[1].Id, MetricType="Temperature", MinValue=20,  MaxValue=45  });
+        thresholds.Add(new() { EquipmentId=techStations[1].Id, MetricType="Humidity",    MinValue=30,  MaxValue=65  });
+        thresholds.Add(new() { EquipmentId=techStations[1].Id, MetricType="Pressure",    MinValue=0.6, MaxValue=1.8 });
 
         db.Thresholds.AddRange(thresholds);
         await db.SaveChangesAsync();
