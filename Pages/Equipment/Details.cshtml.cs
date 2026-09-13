@@ -16,6 +16,13 @@ public class DetailsModel(AppDbContext db, ITenantProvider tenant) : PageModel
     public List<Alert> RecentAlerts { get; private set; } = [];
     public List<Threshold> Thresholds { get; private set; } = [];
 
+    // Date-range filter (default: last 24 hours)
+    [BindProperty(SupportsGet = true)]
+    public DateTime? From { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? To { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var eq = await db.Equipments.FindAsync(id);
@@ -23,10 +30,20 @@ public class DetailsModel(AppDbContext db, ITenantProvider tenant) : PageModel
 
         Equipment = eq;
 
+        // Apply date-range defaults (last 24 h if not specified)
+        var from = From.HasValue
+            ? DateTime.SpecifyKind(From.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow.AddHours(-24);
+        var to = To.HasValue
+            ? DateTime.SpecifyKind(To.Value.AddDays(1).AddSeconds(-1), DateTimeKind.Utc)
+            : DateTime.UtcNow;
+
         RecentReadings = await db.Readings
-            .Where(r => r.EquipmentId == id)
+            .Where(r => r.EquipmentId == id
+                     && r.Timestamp >= from
+                     && r.Timestamp <= to)
             .OrderByDescending(r => r.Timestamp)
-            .Take(20)
+            .Take(200)
             .ToListAsync();
 
         RecentAlerts = await db.Alerts

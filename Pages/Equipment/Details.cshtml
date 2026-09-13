@@ -41,9 +41,16 @@
             <span class="detail-meta-item"><i class="bi bi-database"></i>@Model.RecentReadings.Count readings loaded</span>
         </div>
     </div>
-    <a asp-page="/Equipment/Edit" asp-route-id="@Model.Equipment.Id" class="btn-iot btn-iot-ghost">
-        <i class="bi bi-pencil"></i> Edit Station
-    </a>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a asp-page="/Equipment/Edit" asp-route-id="@Model.Equipment.Id" class="btn-iot btn-iot-ghost">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a asp-page="/Equipment/Delete" asp-route-id="@Model.Equipment.Id"
+           style="padding:8px 14px;background:transparent;border:1px solid rgba(239,68,68,.4);border-radius:var(--radius-sm);color:var(--red);font-size:12.5px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px;transition:border-color var(--transition);"
+           onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='rgba(239,68,68,.4)'">
+            <i class="bi bi-trash3"></i> Delete
+        </a>
+    </div>
 </div>
 
 <!-- ── Metric Gauges ─────────────────────────────────────────────── -->
@@ -94,8 +101,23 @@
 <div class="two-col" style="margin-bottom:24px">
     <!-- Historical Chart -->
     <div class="panel">
-        <div class="panel-header">
-            <div class="panel-title"><i class="bi bi-graph-up"></i> Sensor History (last 20 readings)</div>
+        <div class="panel-header" style="flex-wrap:wrap;gap:10px;">
+            <div class="panel-title"><i class="bi bi-graph-up"></i> Sensor History</div>
+            <!-- Date-range filter -->
+            <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <input type="hidden" name="id" value="@Model.Equipment.Id" />
+                <label style="font-size:11px;color:var(--text-muted);margin:0">From</label>
+                <input type="date" name="From" value="@Model.From?.ToString("yyyy-MM-dd")"
+                       style="background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;padding:4px 8px;" />
+                <label style="font-size:11px;color:var(--text-muted);margin:0">To</label>
+                <input type="date" name="To" value="@Model.To?.ToString("yyyy-MM-dd")"
+                       style="background:var(--bg-base);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:12px;padding:4px 8px;" />
+                <button type="submit" style="padding:4px 12px;background:var(--blue);border:none;border-radius:var(--radius-sm);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">
+                    Filter
+                </button>
+                <a asp-page="/Equipment/Details" asp-route-id="@Model.Equipment.Id"
+                   style="font-size:11px;color:var(--text-muted);text-decoration:none;">Reset</a>
+            </form>
         </div>
         <div class="chart-wrap" style="height:220px">
             <canvas id="historyChart"></canvas>
